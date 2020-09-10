@@ -1,15 +1,18 @@
 package com.centene.codechallenge.model;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
 import java.util.List;
 
 //@Document("enrollee")
 @Entity
+@Table(name = "enrollee")
 public class Enrollee {
 
-    @Id
-    @GeneratedValue
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @Column
@@ -24,10 +27,11 @@ public class Enrollee {
     @Column
     private String phoneNumber;
 
-    @Column
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
-    private List<Enrollee> dependents;
+    @OneToMany(mappedBy = "enrollee", cascade = {
+            CascadeType.ALL
+        })
+    @JsonManagedReference
+    private List<Dependent> dependents;
 
 
     public long getId() {
@@ -70,11 +74,12 @@ public class Enrollee {
         this.phoneNumber = phoneNumber;
     }
 
-    public List<Enrollee> getDependents() {
-        return dependents;
-    }
+	public List<Dependent> getDependents() {
+		return dependents;
+	}
 
-    public void setDependents(List<Enrollee> dependents) {
-        this.dependents = dependents;
-    }
+	public void setDependents(List<Dependent> dependents) {
+		this.dependents = dependents;
+	}
+    
 }
