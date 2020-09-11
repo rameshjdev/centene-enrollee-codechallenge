@@ -1,14 +1,32 @@
 package com.centene.codechallenge.rest;
 
-import com.centene.codechallenge.EnrolleeRepository;
-import com.centene.codechallenge.model.Enrollee;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.centene.codechallenge.model.Dependent;
+import com.centene.codechallenge.model.Enrollee;
+import com.centene.codechallenge.repository.DependentRepository;
+import com.centene.codechallenge.repository.EnrolleeRepository;
+
+/**
+ *
+ * @author ramesh
+ * Description: Rest Controller for Enrollee and Dependent
+ *
+ */
 @RestController
 @RequestMapping("/enrollees")
 public class EnrolleeRestController {
@@ -16,68 +34,132 @@ public class EnrolleeRestController {
     @Autowired
     private EnrolleeRepository repository;
 
+    @Autowired
+    private DependentRepository dependentRepository;
+
+    /**
+     * endpoint to get all Enrolleess
+     * @param id
+     * @return
+     */
     @GetMapping
-    public Iterable<Enrollee> getEnrollees() {
-        return repository.findAll();
+    public List<Enrollee> getEnrollees() {
+    	List<Enrollee> enrolleeList = new ArrayList<>();
+    	Iterable<Enrollee> enrolleIterable = repository.findAll();
+    	enrolleIterable.forEach(enrolleeList::add);
+        return enrolleeList;
     }
 
+    /**
+     * endpoint to get Enrollee by Id
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public Enrollee getEnrollee(@PathVariable("id") long id) {
+        return repository.findById(id).get();
+    }
+
+    /**
+     * endpoint to add Enrollee
+     * @param enrollee
+     * @return
+     */
     @PostMapping
-    public void addEnrollee(@RequestBody Enrollee enrollee) {
-        repository.save(enrollee);
+    public ResponseEntity<Enrollee> addEnrollee(@RequestBody Enrollee enrollee) {
+        return new ResponseEntity<Enrollee>(repository.save(enrollee), HttpStatus.CREATED);
     }
 
+    /**
+     * Endpoint to update Enrollee
+     * @param id
+     * @param enrollee
+     * @return
+     */
     @PutMapping("/{id}")
-    public void updateEnrolle(@PathVariable("id") long id, @RequestBody Enrollee enrollee) {
+    public Enrollee updateEnrolle(@PathVariable("id") long id, @RequestBody Enrollee enrollee) {
         Enrollee existingEnrolee = repository.findById(id).get();
         existingEnrolee.setName(enrollee.getName());
         existingEnrolee.setActivationStatus(enrollee.isActivationStatus());
         existingEnrolee.setDob(enrollee.getDob());
         existingEnrolee.setPhoneNumber(enrollee.getPhoneNumber());
-        repository.save(existingEnrolee);
+        return repository.save(existingEnrolee);
     }
 
+    /**
+     * endpoint to delete Enrollee by id
+     * @param id
+     */
     @DeleteMapping("{id}")
     public void deleteEnrollee(@PathVariable("id") long id) {
         repository.deleteById(id);
     }
 
+    /**
+     * endpoint to get all dependents for the Enrollee
+     * @param id
+     * @return
+     */
+    @GetMapping("{id}/dependents")
+    public List<Dependent> getDependents(@PathVariable("id") long id) {
+        Optional<Enrollee> enrollee = repository.findById(id);
+        return enrollee.get().getDependents();
+    }
+    /**
+     * Endpoint to get Dependent by Id
+     * @param id
+     * @param dependentId
+     * @return
+     */
+    @GetMapping("/{id}/dependents/{dependentId}")
+    public Dependent getDependent(@PathVariable("id") long id, @PathVariable("dependentId") long dependentId) {
+        return dependentRepository.findById(dependentId).get();
+    }
+
+    /**
+     * endpoint to add Dependent
+     * @param id
+     * @param dependent
+     * @return
+     * @throws Exception
+     */
     @PostMapping("{id}/dependents")
-    public void addDependent(@PathVariable("id") long id, @RequestBody List<Enrollee> enrollee) {
-        Enrollee existingEnrolee = repository.findById(id).get();
-        Iterable<Enrollee> newDependents = repository.saveAll(enrollee);
-        List<Enrollee> dependentList = new ArrayList<>();
-        if(null == existingEnrolee.getDependents()) {
-            existingEnrolee.setDependents(new ArrayList<>());
-        }
-        newDependents.forEach(dependentList::add);
-        existingEnrolee.getDependents().addAll(dependentList);
-        repository.save(existingEnrolee);
+    public ResponseEntity<Dependent> addDependent(@PathVariable("id") long id, @RequestBody Dependent dependent) throws Exception {
+    	Optional<Dependent> dependentObj = repository.findById(id).map(enrollee -> {
+    		dependent.setEnrollee(enrollee);
+            return dependentRepository.save(dependent);
+        });
+    	return new ResponseEntity<Dependent>(dependentObj.get(), HttpStatus.CREATED);
     }
 
+    /**
+     * endpoint to delete dependent by Id
+     * @param id
+     * @param dependentId
+     * @throws Exception
+     */
     @DeleteMapping("{id}/dependents/{dependentId}")
-    public void deleteDependent(@PathVariable("id") long id, @PathVariable("dependentId") long dependentId) {
-        Enrollee existingEnrolee = repository.findById(id).get();
-        List<Enrollee> newDependents = new ArrayList<>();
-        for(Enrollee dependent : existingEnrolee.getDependents()) {
-            if(dependent.getId() != dependentId) {
-                newDependents.add(dependent);
-            }
-        }
-        existingEnrolee.setDependents(newDependents);
-        repository.save(existingEnrolee);
+    public void deleteDependent(@PathVariable("id") long id, @PathVariable("dependentId") long dependentId) throws Exception {
+    	dependentRepository.findByIdAndId(dependentId, id).map(dependent -> {
+    		dependentRepository.delete(dependent);
+            return ResponseEntity.ok().build();
+        }).orElseThrow(() -> new Exception(
+            "Dependent not found with dependentId " + dependentId + " and id " + id));
     }
 
+    /**
+     * endpoint to update dependent by Id
+     * @param id
+     * @param dependentId
+     * @param dependent
+     * @return
+     * @throws Exception
+     */
     @PutMapping("{id}/dependents/{dependentId}")
-    public void updateDependent(@PathVariable("id") long id, @PathVariable("dependentId") long dependentId, @RequestBody Enrollee enrollee) {
-        Enrollee existingEnrolee = repository.findById(id).get();
-        for(Enrollee dependent : existingEnrolee.getDependents()) {
-            if(dependent.getId() == dependentId) {
-                dependent.setName(enrollee.getName());
-                dependent.setActivationStatus(enrollee.isActivationStatus());
-                dependent.setDob(enrollee.getDob());
-                dependent.setPhoneNumber(enrollee.getPhoneNumber());
-            }
-        }
-        repository.save(existingEnrolee);
+    public Dependent updateDependent(@PathVariable("id") long id, @PathVariable("dependentId") long dependentId, @RequestBody Dependent dependent) throws Exception {
+    	return repository.findById(id).map(enrollee -> {
+            dependent.setEnrollee(enrollee);
+            return dependentRepository.save(dependent);
+        }).orElseThrow(() -> new Exception("Enrollee not found"));
     }
 }
