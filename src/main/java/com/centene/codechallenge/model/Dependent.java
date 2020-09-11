@@ -10,7 +10,7 @@ import javax.persistence.*;
 @Table(name = "dependent")
 public class Dependent {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
@@ -19,23 +19,22 @@ public class Dependent {
 
     @Column
     private String dob;
-    
+
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name="enrollee_id", nullable=false)
+    @JoinColumn(name = "enrollee_id", nullable = false)
     @JsonBackReference
     private Enrollee enrollee;
 
-    
 
     public long getId() {
-		return id;
-	}
+        return id;
+    }
 
-	public void setId(long id) {
-		this.id = id;
-	}
+    public void setId(long id) {
+        this.id = id;
+    }
 
-	public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -51,16 +50,13 @@ public class Dependent {
         this.dob = dob;
     }
 
-	public void setEnrollee(Enrollee enrollee) {
-		this.enrollee = enrollee;
-	}
+    public void setEnrollee(Enrollee enrollee) {
+        this.enrollee = enrollee;
+    }
 
-	public Enrollee getEnrollee() {
-		return enrollee;
-	}
-	
-	
-    
-    
-    
+    public Enrollee getEnrollee() {
+        return enrollee;
+    }
+
+
 }

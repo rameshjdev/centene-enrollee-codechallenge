@@ -11,7 +11,7 @@ import java.util.List;
 @Table(name = "enrollee")
 public class Enrollee {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
@@ -29,7 +29,7 @@ public class Enrollee {
 
     @OneToMany(mappedBy = "enrollee", cascade = {
             CascadeType.ALL
-        })
+    })
     @JsonManagedReference
     private List<Dependent> dependents;
 
@@ -74,12 +74,12 @@ public class Enrollee {
         this.phoneNumber = phoneNumber;
     }
 
-	public List<Dependent> getDependents() {
-		return dependents;
-	}
+    public List<Dependent> getDependents() {
+        return dependents;
+    }
 
-	public void setDependents(List<Dependent> dependents) {
-		this.dependents = dependents;
-	}
-    
+    public void setDependents(List<Dependent> dependents) {
+        this.dependents = dependents;
+    }
+
 }
